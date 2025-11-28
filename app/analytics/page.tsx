@@ -102,13 +102,8 @@ export default function AnalyticsPage() {
       const categoryMap = new Map<string, { name: string; total: number; count: number }>()
       let total = 0
 
-      interface ItemWithCategory {
-        total_price: number
-        category_id: string | null
-        category?: { name: string } | null
-      }
-
-      items?.forEach((item: ItemWithCategory) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      items?.forEach((item: any) => {
         const categoryId = item.category_id || "uncategorized"
         const categoryName = item.category?.name || "미분류"
         const amount = item.total_price || 0
