@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Navigation from "../components/Navigation"
 import { supabase } from "@/lib/supabase"
 
+export const dynamic = 'force-dynamic'
+
 interface TransactionItem {
   productName: string
   amount: number
