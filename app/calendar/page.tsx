@@ -29,12 +29,14 @@ export default function CalendarPage() {
 
   useEffect(() => {
     checkUser()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     if (userId) {
       loadCalendarData()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDate, userId])
 
   const checkUser = async () => {

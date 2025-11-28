@@ -26,12 +26,14 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     checkUser()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     if (userId) {
       loadStatistics()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDate, viewMode, userId])
 
   const checkUser = async () => {
@@ -100,7 +102,13 @@ export default function AnalyticsPage() {
       const categoryMap = new Map<string, { name: string; total: number; count: number }>()
       let total = 0
 
-      items?.forEach((item: any) => {
+      interface ItemWithCategory {
+        total_price: number
+        category_id: string | null
+        category?: { name: string } | null
+      }
+
+      items?.forEach((item: ItemWithCategory) => {
         const categoryId = item.category_id || "uncategorized"
         const categoryName = item.category?.name || "미분류"
         const amount = item.total_price || 0

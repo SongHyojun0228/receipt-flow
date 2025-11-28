@@ -20,6 +20,7 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     checkUser()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const checkUser = async () => {
@@ -79,9 +80,10 @@ export default function CategoriesPage() {
         setNewCategory("")
         alert("카테고리가 추가되었습니다!")
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error adding category:", error)
-      alert(`카테고리 추가 실패: ${error?.message || "알 수 없는 오류"}`)
+      const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류"
+      alert(`카테고리 추가 실패: ${errorMessage}`)
     }
   }
 

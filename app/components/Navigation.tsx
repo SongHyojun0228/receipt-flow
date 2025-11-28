@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase"
 import { signOut } from "@/lib/auth"
 
 export default function Navigation() {
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<{ email?: string } | null>(null)
   const router = useRouter()
 
   useEffect(() => {

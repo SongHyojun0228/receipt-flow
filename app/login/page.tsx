@@ -19,7 +19,7 @@ export default function LoginPage() {
     try {
       if (isLogin) {
         // 로그인
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
@@ -30,7 +30,7 @@ export default function LoginPage() {
         router.push("/")
       } else {
         // 회원가입
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email,
           password,
         })
@@ -40,8 +40,9 @@ export default function LoginPage() {
         alert("회원가입 성공! 로그인해주세요.")
         setIsLogin(true)
       }
-    } catch (error: any) {
-      alert(error.message || "오류가 발생했습니다.")
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "오류가 발생했습니다."
+      alert(errorMessage)
     } finally {
       setLoading(false)
     }
