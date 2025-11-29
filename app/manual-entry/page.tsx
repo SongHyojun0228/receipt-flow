@@ -1,11 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Navigation from "../components/Navigation"
 import { supabase } from "@/lib/supabase"
-
-export const dynamic = 'force-dynamic'
 
 interface TransactionItem {
   productName: string
@@ -19,7 +17,7 @@ interface Category {
   name: string
 }
 
-export default function ManualEntryPage() {
+function ManualEntryForm() {
   const searchParams = useSearchParams()
   const dateParam = searchParams.get("date")
   const [date, setDate] = useState(dateParam || new Date().toISOString().split("T")[0])
@@ -382,5 +380,13 @@ export default function ManualEntryPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function ManualEntryPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ManualEntryForm />
+    </Suspense>
   )
 }
