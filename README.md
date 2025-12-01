@@ -158,7 +158,7 @@ npm start
 2. Vercel이 자동으로 빌드 및 배포
 3. 환경 변수 설정 (Vercel 대시보드)
 
-**배포 URL**: [https://receipt-flow.vercel.app](https://receipt-flow.vercel.app)
+**배포 URL**: [[https://receipt-flow.vercel.app]([https://receipt-flow.vercel.app](https://receipt-flow-three.vercel.app/))](https://receipt-flow-three.vercel.app/)
 
 ## 📁 프로젝트 구조
 
