@@ -29,6 +29,7 @@ export default function ReceiptUploadPage() {
 
   useEffect(() => {
     checkUser()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const checkUser = async () => {
@@ -210,12 +211,11 @@ export default function ReceiptUploadPage() {
       const productPattern1 = /^(\d{3})\s+(.+?)\s+(\d{1,3}(?:,\d{3})*)\s+(\d+)\s+(\d{1,3}(?:,\d{3})*)$/
       const productPattern2 = /^[+*]?(\d{10,})\s*\.?\s*(\d{1,3}(?:,\d{3})*)\s+(\d+)\s+(\d{1,3}(?:,\d{3})*)$/
 
-      let match1 = line.match(productPattern1)
+      const match1 = line.match(productPattern1)
       if (match1) {
         const productName = match1[2].trim()
         const pricePerUnit = parseInt(match1[3].replace(/,/g, ""))
         const amount = parseInt(match1[4])
-        const totalPrice = parseInt(match1[5].replace(/,/g, ""))
 
         if (productName && pricePerUnit > 0 && amount > 0) {
           items.push({
@@ -228,7 +228,7 @@ export default function ReceiptUploadPage() {
       }
 
       // 이전 줄에 상품명이 있고, 현재 줄에 바코드+금액 패턴
-      let match2 = line.match(productPattern2)
+      const match2 = line.match(productPattern2)
       if (match2 && i > 0) {
         const prevLine = lines[i - 1]
         const productName = prevLine.replace(/^\d{3}\s+/, "").trim()
