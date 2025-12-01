@@ -169,79 +169,94 @@ export default function ReceiptUploadPage() {
       }
     }
 
-    // 장소를 찾지 못한 경우, 한글이 포함된 첫 번째 짧은 줄을 장소로 추정
+    // 장소를 찾지 못한 경우, "~점"으로 끝나는 줄 찾기
     if (!place) {
       for (const line of lines) {
-        if (line.length < 30 && /[가-힣]/.test(line) && !line.match(/\d{4}[-./]\d{1,2}[-./]\d{1,2}/)) {
+        if (line.endsWith("점") && /[가-힣]/.test(line)) {
           place = line.trim()
           break
         }
       }
     }
 
-    // 품목 추출: 상품코드 + 상품명 + 가격 패턴
-    // 예: "001 A3리필속지(20매) 1,300 2 2,600"
+    // 그래도 없으면 한글이 포함된 첫 번째 짧은 줄을 장소로 추정
+    if (!place) {
+      for (const line of lines) {
+        if (
+          line.length < 30 &&
+          line.length > 2 &&
+          /[가-힣]/.test(line) &&
+          !line.match(/\d{4}[-./]\d{1,2}[-./]\d{1,2}/) &&
+          !line.includes("주소") &&
+          !line.includes("전화") &&
+          !line.includes("영수증")
+        ) {
+          place = line.trim()
+          break
+        }
+      }
+    }
+
+    // 품목 추출: 상품 정보를 먼저 수집
+    const productLines: { code: string; name: string; index: number }[] = []
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
+      // 상품코드 + 상품명 패턴: "001 서리필속지(20매)" 또는 "002 합지0량3공바인다(7000)"
+      const productNamePattern = /^(\d{3})\s+(.+)$/
+      const match = line.match(productNamePattern)
 
-      // 제외할 패턴: 주소, 전화번호, 사업자번호, URL 등
-      if (
-        line.includes("http") ||
-        line.includes("www") ||
-        line.includes("주소") ||
-        line.includes("전화") ||
-        line.includes("사업자") ||
-        line.includes("대표") ||
-        line.match(/\d{2,3}-\d{3,4}-\d{4}/) || // 전화번호
-        line.match(/\d{3}-\d{2}-\d{5}/) || // 사업자번호
-        line.includes("고양시") ||
-        line.includes("등 톡") ||
-        line.includes("번호") ||
-        line.includes("영수증") ||
-        line.includes("합계") ||
-        line.includes("총액") ||
-        line.includes("부가세")
-      ) {
-        continue
+      if (match && /[가-힣a-zA-Z]/.test(match[2])) {
+        productLines.push({
+          code: match[1],
+          name: match[2].trim(),
+          index: i
+        })
       }
+    }
 
-      // 상품 패턴: 숫자(상품코드) + 한글/영문(상품명) + 금액 여러 개
-      // 또는: 한글/영문(상품명) + 바코드번호 + 금액
-      const productPattern1 = /^(\d{3})\s+(.+?)\s+(\d{1,3}(?:,\d{3})*)\s+(\d+)\s+(\d{1,3}(?:,\d{3})*)$/
-      const productPattern2 = /^[+*]?(\d{10,})\s*\.?\s*(\d{1,3}(?:,\d{3})*)\s+(\d+)\s+(\d{1,3}(?:,\d{3})*)$/
+    // 각 상품에 대해 가격 정보 찾기
+    for (const product of productLines) {
+      // 상품명 다음 몇 줄 안에서 가격 정보 찾기 (최대 3줄)
+      for (let offset = 1; offset <= 3; offset++) {
+        const lineIndex = product.index + offset
+        if (lineIndex >= lines.length) break
 
-      const match1 = line.match(productPattern1)
-      if (match1) {
-        const productName = match1[2].trim()
-        const pricePerUnit = parseInt(match1[3].replace(/,/g, ""))
-        const amount = parseInt(match1[4])
+        const priceLine = lines[lineIndex]
 
-        if (productName && pricePerUnit > 0 && amount > 0) {
-          items.push({
-            productName,
-            amount,
-            pricePerUnit,
-          })
+        // 제외할 패턴
+        if (
+          priceLine.includes("http") ||
+          priceLine.includes("www") ||
+          priceLine.includes("주소") ||
+          priceLine.includes("전화") ||
+          priceLine.includes("사업자") ||
+          priceLine.includes("대표") ||
+          priceLine.match(/\d{2,3}-\d{3,4}-\d{4}/) ||
+          priceLine.includes("교환") ||
+          priceLine.includes("환불") ||
+          priceLine.includes("영수증")
+        ) {
+          continue
         }
-        continue
-      }
 
-      // 이전 줄에 상품명이 있고, 현재 줄에 바코드+금액 패턴
-      const match2 = line.match(productPattern2)
-      if (match2 && i > 0) {
-        const prevLine = lines[i - 1]
-        const productName = prevLine.replace(/^\d{3}\s+/, "").trim()
-        const pricePerUnit = parseInt(match2[2].replace(/,/g, ""))
-        const amount = parseInt(match2[3])
+        // 가격 패턴: 바코드(선택) + 단가 + 수량 + 총액
+        // 예: "8809074396277.    1,300 2    2600"
+        // 또는: "1,300 2 2,600"
+        const pricePattern = /(?:\d{8,}\s*\.?\s*)?(\d{1,3}(?:,\d{3})*)\s+(\d+)\s+(\d{1,3}(?:,\d{3})*)/
+        const priceMatch = priceLine.match(pricePattern)
 
-        if (productName && /[가-힣a-zA-Z]/.test(productName) && pricePerUnit > 0) {
-          // 중복 체크
-          if (!items.find(item => item.productName === productName)) {
+        if (priceMatch) {
+          const pricePerUnit = parseInt(priceMatch[1].replace(/,/g, ""))
+          const amount = parseInt(priceMatch[2])
+
+          if (pricePerUnit > 0 && amount > 0) {
             items.push({
-              productName,
+              productName: product.name,
               amount,
               pricePerUnit,
             })
+            break // 이 상품의 가격을 찾았으므로 다음 상품으로
           }
         }
       }
