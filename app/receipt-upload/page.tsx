@@ -122,8 +122,7 @@ export default function ReceiptUploadPage() {
         })
       )
 
-      alert("영수증 분석이 완료되었습니다! 수기입력 페이지로 이동합니다.")
-      router.push("/manual-entry")
+      alert("영수증 분석이 완료되었습니다!")
     } catch (error) {
       console.error("OCR Error:", error)
       alert("영수증 처리 중 오류가 발생했습니다.")
@@ -410,7 +409,29 @@ export default function ReceiptUploadPage() {
                   {extractedData.items.length}개
                 </span>
               </div>
-              {extractedData.totalAmount && (
+
+              {/* 품목 상세 */}
+              {extractedData.items.length > 0 && (
+                <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-700">
+                  <h3 className="mb-2 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                    추출된 품목:
+                  </h3>
+                  <div className="space-y-2">
+                    {extractedData.items.map((item, index) => (
+                      <div key={index} className="flex justify-between text-xs">
+                        <span className="text-zinc-700 dark:text-zinc-300">
+                          {item.productName}
+                        </span>
+                        <span className="text-zinc-600 dark:text-zinc-400">
+                          {item.pricePerUnit.toLocaleString()}원 x {item.amount}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {extractedData.totalAmount !== undefined && (
                 <div className="flex justify-between border-t border-zinc-200 pt-2 dark:border-zinc-700">
                   <span className="text-zinc-600 dark:text-zinc-400">총액:</span>
                   <span className="font-bold text-zinc-900 dark:text-zinc-50">
@@ -419,6 +440,14 @@ export default function ReceiptUploadPage() {
                 </div>
               )}
             </div>
+
+            {/* 수기입력으로 이동 버튼 */}
+            <button
+              onClick={() => router.push("/manual-entry")}
+              className="mt-6 w-full rounded-lg bg-zinc-900 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
+            >
+              수기입력으로 이동하기
+            </button>
           </div>
         )}
       </main>
