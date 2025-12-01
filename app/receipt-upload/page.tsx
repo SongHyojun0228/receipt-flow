@@ -257,13 +257,14 @@ export default function ReceiptUploadPage() {
         }
 
         // 가격 패턴: 바코드(선택) + 단가 + 수량 + 총액
-        // 예: "8809074396277.    1,300 2    2600"
+        // 예: "*8809074396277 1,300 2 2,600"
         // 또는: "1,300 2 2,600"
-        const pricePattern = /(?:\d{8,}\s*\.?\s*)?(\d{1,3}(?:,\d{3})*)\s+(\d+)\s+(\d{1,3}(?:,\d{3})*)/
+        // 또는: "2.500 10 25,000" (마침표 대신 쉼표)
+        const pricePattern = /[*]?\d{8,}\s+([\d,.]+)\s+(\d+)\s+([\d,]+)/
         const priceMatch = priceLine.match(pricePattern)
 
         if (priceMatch) {
-          const pricePerUnit = parseInt(priceMatch[1].replace(/,/g, ""))
+          const pricePerUnit = parseInt(priceMatch[1].replace(/[,._]/g, ""))
           const amount = parseInt(priceMatch[2])
 
           if (pricePerUnit > 0 && amount > 0) {
@@ -278,8 +279,8 @@ export default function ReceiptUploadPage() {
       }
     }
 
-    // 총액 찾기: "합계", "총액", 가장 큰 금액 등
-    const totalPattern = /(?:합계|총액|total)[:\s]*(\d{1,3}(?:,\d{3})*)/i
+    // 총액 찾기: "합계", "총액", "합 계" 등
+    const totalPattern = /(?:합\s*계|총\s*액|total)[:\s]*([\d,]+)/i
     const totalMatch = text.match(totalPattern)
     if (totalMatch) {
       totalAmount = parseInt(totalMatch[1].replace(/,/g, ""))
