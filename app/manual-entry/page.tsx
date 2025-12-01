@@ -62,8 +62,33 @@ function ManualEntryForm() {
       if (error) throw error
       setCategories(data || [])
 
-      // 첫 번째 카테고리를 기본값으로 설정
-      if (data && data.length > 0) {
+      // OCR 데이터 확인 및 로드
+      const receiptDataStr = sessionStorage.getItem("receiptData")
+      if (receiptDataStr) {
+        try {
+          const receiptData = JSON.parse(receiptDataStr)
+
+          // 폼 데이터 채우기
+          if (receiptData.place) setPlace(receiptData.place)
+          if (receiptData.date) setDate(receiptData.date)
+
+          if (receiptData.items && receiptData.items.length > 0 && data && data.length > 0) {
+            const mappedItems = receiptData.items.map((item: { productName: string; amount: number; pricePerUnit: number }) => ({
+              productName: item.productName || "",
+              amount: item.amount || 1,
+              pricePerUnit: item.pricePerUnit || 0,
+              categoryId: data[0].id,
+            }))
+            setItems(mappedItems)
+          }
+
+          // sessionStorage 클리어
+          sessionStorage.removeItem("receiptData")
+        } catch (err) {
+          console.error("Error parsing receipt data:", err)
+        }
+      } else if (data && data.length > 0) {
+        // OCR 데이터가 없으면 기본값 설정
         setItems([
           {
             productName: "",
