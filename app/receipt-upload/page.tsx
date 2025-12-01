@@ -135,7 +135,6 @@ export default function ReceiptUploadPage() {
   const parseReceiptText = (text: string): ExtractedData => {
     const lines = text.split("\n").filter((line) => line.trim())
 
-    // 간단한 파싱 로직 (실제로는 더 정교한 로직 필요)
     let place = ""
     let date = ""
     let totalAmount = 0
@@ -148,48 +147,115 @@ export default function ReceiptUploadPage() {
       date = dateMatch[1].replace(/[./]/g, "-")
     }
 
-    // 금액 패턴 찾기
-    const priceRegex = /(\d{1,3}(?:,\d{3})*|\d+)원?/g
-    const prices: number[] = []
-    let match
+    // 장소 찾기 (주요 마트/매장 이름 패턴)
+    const storePatterns = [
+      /이마트\s*([^\n]*점)?/i,
+      /롯데마트\s*([^\n]*점)?/i,
+      /홈플러스\s*([^\n]*점)?/i,
+      /GS25/i,
+      /CU/i,
+      /세븐일레븐/i,
+      /올리브영/i,
+      /다이소/i,
+      /스타벅스/i,
+      /맥도날드/i,
+    ]
 
-    while ((match = priceRegex.exec(text)) !== null) {
-      const price = parseInt(match[1].replace(/,/g, ""))
-      if (price > 0) {
-        prices.push(price)
+    for (const pattern of storePatterns) {
+      const storeMatch = text.match(pattern)
+      if (storeMatch) {
+        place = storeMatch[0].trim()
+        break
       }
     }
 
-    // 가장 큰 금액을 총액으로 추정
-    if (prices.length > 0) {
-      totalAmount = Math.max(...prices)
-    }
-
-    // 첫 번째 줄을 장소로 추정 (간단한 휴리스틱)
-    if (lines.length > 0) {
-      place = lines[0].trim()
-    }
-
-    // 품목 추출 (간단한 로직 - 실제로는 더 복잡한 패턴 매칭 필요)
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]
-      const priceMatch = line.match(/(\d{1,3}(?:,\d{3})*|\d+)원?/)
-
-      if (priceMatch) {
-        const price = parseInt(priceMatch[1].replace(/,/g, ""))
-        const productName = line
-          .replace(priceMatch[0], "")
-          .trim()
-          .replace(/[*\s]+/g, " ")
-
-        if (productName && price > 0 && price < totalAmount) {
-          items.push({
-            productName,
-            amount: 1,
-            pricePerUnit: price,
-          })
+    // 장소를 찾지 못한 경우, 한글이 포함된 첫 번째 짧은 줄을 장소로 추정
+    if (!place) {
+      for (const line of lines) {
+        if (line.length < 30 && /[가-힣]/.test(line) && !line.match(/\d{4}[-./]\d{1,2}[-./]\d{1,2}/)) {
+          place = line.trim()
+          break
         }
       }
+    }
+
+    // 품목 추출: 상품코드 + 상품명 + 가격 패턴
+    // 예: "001 A3리필속지(20매) 1,300 2 2,600"
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+
+      // 제외할 패턴: 주소, 전화번호, 사업자번호, URL 등
+      if (
+        line.includes("http") ||
+        line.includes("www") ||
+        line.includes("주소") ||
+        line.includes("전화") ||
+        line.includes("사업자") ||
+        line.includes("대표") ||
+        line.match(/\d{2,3}-\d{3,4}-\d{4}/) || // 전화번호
+        line.match(/\d{3}-\d{2}-\d{5}/) || // 사업자번호
+        line.includes("고양시") ||
+        line.includes("등 톡") ||
+        line.includes("번호") ||
+        line.includes("영수증") ||
+        line.includes("합계") ||
+        line.includes("총액") ||
+        line.includes("부가세")
+      ) {
+        continue
+      }
+
+      // 상품 패턴: 숫자(상품코드) + 한글/영문(상품명) + 금액 여러 개
+      // 또는: 한글/영문(상품명) + 바코드번호 + 금액
+      const productPattern1 = /^(\d{3})\s+(.+?)\s+(\d{1,3}(?:,\d{3})*)\s+(\d+)\s+(\d{1,3}(?:,\d{3})*)$/
+      const productPattern2 = /^[+*]?(\d{10,})\s*\.?\s*(\d{1,3}(?:,\d{3})*)\s+(\d+)\s+(\d{1,3}(?:,\d{3})*)$/
+
+      let match1 = line.match(productPattern1)
+      if (match1) {
+        const productName = match1[2].trim()
+        const pricePerUnit = parseInt(match1[3].replace(/,/g, ""))
+        const amount = parseInt(match1[4])
+        const totalPrice = parseInt(match1[5].replace(/,/g, ""))
+
+        if (productName && pricePerUnit > 0 && amount > 0) {
+          items.push({
+            productName,
+            amount,
+            pricePerUnit,
+          })
+        }
+        continue
+      }
+
+      // 이전 줄에 상품명이 있고, 현재 줄에 바코드+금액 패턴
+      let match2 = line.match(productPattern2)
+      if (match2 && i > 0) {
+        const prevLine = lines[i - 1]
+        const productName = prevLine.replace(/^\d{3}\s+/, "").trim()
+        const pricePerUnit = parseInt(match2[2].replace(/,/g, ""))
+        const amount = parseInt(match2[3])
+
+        if (productName && /[가-힣a-zA-Z]/.test(productName) && pricePerUnit > 0) {
+          // 중복 체크
+          if (!items.find(item => item.productName === productName)) {
+            items.push({
+              productName,
+              amount,
+              pricePerUnit,
+            })
+          }
+        }
+      }
+    }
+
+    // 총액 찾기: "합계", "총액", 가장 큰 금액 등
+    const totalPattern = /(?:합계|총액|total)[:\s]*(\d{1,3}(?:,\d{3})*)/i
+    const totalMatch = text.match(totalPattern)
+    if (totalMatch) {
+      totalAmount = parseInt(totalMatch[1].replace(/,/g, ""))
+    } else {
+      // 품목의 총합으로 계산
+      totalAmount = items.reduce((sum, item) => sum + item.amount * item.pricePerUnit, 0)
     }
 
     return {
