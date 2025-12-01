@@ -97,7 +97,10 @@ export default function ReceiptUploadPage() {
       setExtractedData(parsed)
 
       // Supabase Storage에 이미지 업로드
-      const fileName = `${userId}/${Date.now()}_${selectedFile.name}`
+      // 파일 확장자 추출
+      const fileExtension = selectedFile.name.split('.').pop() || 'jpg'
+      // URL-safe한 파일명 생성 (한글 등 특수문자 제거)
+      const fileName = `${userId}/${Date.now()}.${fileExtension}`
       const { error: uploadError } = await supabase.storage
         .from("receipts")
         .upload(fileName, selectedFile)
