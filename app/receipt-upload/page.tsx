@@ -218,14 +218,62 @@ export default function ReceiptUploadPage() {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
-      // 상품코드 + 상품명 패턴: "001 서리필속지(20매)" 또는 "002 합지0량3공바인다(7000)"
-      const productNamePattern = /^(\d{3})\s+(.+)$/
-      const match = line.match(productNamePattern)
 
-      if (match && /[가-힣a-zA-Z]/.test(match[2])) {
+      // 패턴 1: 상품코드 + 상품명 (예: "001 A3리필속지(20매)")
+      const productWithCodePattern = /^(\d{3})\s+(.+)$/
+      const codeMatch = line.match(productWithCodePattern)
+
+      if (codeMatch && /[가-힣a-zA-Z]/.test(codeMatch[2])) {
         productLines.push({
-          code: match[1],
-          name: match[2].trim(),
+          code: codeMatch[1],
+          name: codeMatch[2].trim(),
+          index: i
+        })
+        continue
+      }
+
+      // 패턴 2: 상품명만 있는 경우 (예: "현대백화점상품 1 10,000")
+      // 제외 조건: 헤더 라인이거나 불필요한 정보
+      if (
+        line.includes("상품명") ||
+        line.includes("수량") ||
+        line.includes("금액") ||
+        line.includes("단가") ||
+        line.includes("http") ||
+        line.includes("www") ||
+        line.includes("전화") ||
+        line.includes("주소") ||
+        line.length < 3
+      ) {
+        continue
+      }
+
+      // 한글/영문이 포함되어 있고, 뒤에 숫자가 있는 패턴
+      // 예: "현대백화점상품 1 10,000"
+      const directProductPattern = /^([가-힣a-zA-Z0-9\s()]+)\s+(\d+)\s+([\d,]+)$/
+      const directMatch = line.match(directProductPattern)
+
+      if (directMatch && /[가-힣a-zA-Z]/.test(directMatch[1])) {
+        // 바로 품목으로 추가 (수량과 가격이 같은 줄에 있음)
+        const productName = directMatch[1].trim()
+        const amount = parseInt(directMatch[2])
+        const totalPrice = parseInt(directMatch[3].replace(/,/g, ""))
+
+        if (productName && amount > 0 && totalPrice > 0) {
+          items.push({
+            productName,
+            amount,
+            pricePerUnit: Math.round(totalPrice / amount),
+          })
+        }
+        continue
+      }
+
+      // 패턴 3: 상품명만 있는 줄 (다음 줄에 가격 정보)
+      if (/[가-힣a-zA-Z]{2,}/.test(line) && !/\d{4,}/.test(line)) {
+        productLines.push({
+          code: "",
+          name: line.trim(),
           index: i
         })
       }
