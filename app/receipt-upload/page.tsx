@@ -78,39 +78,20 @@ export default function ReceiptUploadPage() {
     setOcrProgress(0)
 
     try {
-      // Naver CLOVA OCR API 호출
+      // Next.js API Route를 통해 OCR 호출
       const formData = new FormData()
       formData.append("file", selectedFile)
 
-      // JSON 메시지 추가 (CLOVA OCR 요구사항)
-      const message = {
-        version: "V2",
-        requestId: `receipt-${Date.now()}`,
-        timestamp: Date.now(),
-        images: [
-          {
-            format: selectedFile.type.split("/")[1] || "jpg",
-            name: "receipt"
-          }
-        ]
-      }
-      formData.append("message", JSON.stringify(message))
-
       setOcrProgress(30)
 
-      const response = await fetch(
-        process.env.NEXT_PUBLIC_NAVER_OCR_URL!,
-        {
-          method: "POST",
-          headers: {
-            "X-OCR-SECRET": process.env.NEXT_PUBLIC_NAVER_OCR_SECRET_KEY!,
-          },
-          body: formData,
-        }
-      )
+      const response = await fetch("/api/ocr", {
+        method: "POST",
+        body: formData,
+      })
 
       if (!response.ok) {
-        throw new Error("OCR API 호출 실패")
+        const error = await response.json()
+        throw new Error(error.error || "OCR API 호출 실패")
       }
 
       setOcrProgress(60)
