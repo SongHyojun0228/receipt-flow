@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Navigation from "../components/Navigation"
 import { supabase } from "@/lib/supabase"
-import { createWorker } from "tesseract.js"
 
 interface ExtractedData {
   place?: string
@@ -79,18 +78,54 @@ export default function ReceiptUploadPage() {
     setOcrProgress(0)
 
     try {
-      // OCR 처리
-      const worker = await createWorker("kor", 1, {
-        logger: (m) => {
-          if (m.status === "recognizing text") {
-            setOcrProgress(Math.round(m.progress * 100))
+      // Naver CLOVA OCR API 호출
+      const formData = new FormData()
+      formData.append("file", selectedFile)
+
+      // JSON 메시지 추가 (CLOVA OCR 요구사항)
+      const message = {
+        version: "V2",
+        requestId: `receipt-${Date.now()}`,
+        timestamp: Date.now(),
+        images: [
+          {
+            format: selectedFile.type.split("/")[1] || "jpg",
+            name: "receipt"
           }
-        },
-      })
+        ]
+      }
+      formData.append("message", JSON.stringify(message))
 
-      const { data: { text } } = await worker.recognize(selectedFile)
-      await worker.terminate()
+      setOcrProgress(30)
 
+      const response = await fetch(
+        process.env.NEXT_PUBLIC_NAVER_OCR_URL!,
+        {
+          method: "POST",
+          headers: {
+            "X-OCR-SECRET": process.env.NEXT_PUBLIC_NAVER_OCR_SECRET_KEY!,
+          },
+          body: formData,
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error("OCR API 호출 실패")
+      }
+
+      setOcrProgress(60)
+
+      const result = await response.json()
+
+      // CLOVA OCR 응답에서 텍스트 추출
+      let text = ""
+      if (result.images && result.images[0] && result.images[0].fields) {
+        text = result.images[0].fields
+          .map((field: { inferText: string }) => field.inferText)
+          .join("\n")
+      }
+
+      setOcrProgress(90)
       setExtractedText(text)
 
       // 텍스트 파싱
