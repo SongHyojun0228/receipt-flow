@@ -20,6 +20,7 @@ Receipt Flow는 일상 생활의 지출을 효율적으로 관리할 수 있는 
 - 📊 **카테고리 관리**: 사용자 정의 카테고리를 생성하고 지출 항목 분류
 - 📅 **캘린더 뷰**: 날짜별 지출 내역을 캘린더 형태로 시각화
 - 📈 **통계 분석**: 주간/월간 카테고리별 지출 통계 및 비율 분석
+- 🤖 **AI 지출 분석**: Claude AI를 활용한 지능형 소비 패턴 분석 및 절약 제안
 - 💳 **거래 내역**: 모든 거래를 시간순으로 확인하고 상세 정보 조회
 
 ## 🤖 Claude Code와 함께 개발
@@ -101,7 +102,8 @@ https://www.notion.so/2b913ddc688b806ebb4ded3f46f1413a
 
 ### AI & OCR
 - **Naver CLOVA OCR**: 한글 영수증 자동 인식 API
-- **Next.js API Routes**: OCR API 프록시 및 CORS 처리
+- **Anthropic Claude API**: AI 기반 지출 분석 및 인사이트 제공 (Claude 3 Haiku)
+- **Next.js API Routes**: OCR 및 AI API 프록시, CORS 처리
 
 ### Deployment
 - **Vercel**: 자동 빌드 및 배포 플랫폼
@@ -126,6 +128,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 # Naver CLOVA OCR
 NEXT_PUBLIC_NAVER_OCR_SECRET_KEY=your_naver_ocr_secret_key
 NEXT_PUBLIC_NAVER_OCR_URL=your_naver_ocr_api_url
+
+# Anthropic Claude AI
+ANTHROPIC_API_KEY=your_anthropic_api_key
 ```
 
 **Naver CLOVA OCR 설정 방법:**
@@ -134,6 +139,12 @@ NEXT_PUBLIC_NAVER_OCR_URL=your_naver_ocr_api_url
 3. 도메인 생성 (예: receipt-flow)
 4. Secret Key와 APIGW Invoke URL 복사
 5. `.env.local`에 추가
+
+**Anthropic Claude API 설정 방법:**
+1. [Anthropic Console](https://console.anthropic.com/) 가입
+2. Settings → API Keys에서 새 API 키 생성
+3. 크레딧 구매 (Plans & Billing에서)
+4. API 키 복사 후 `.env.local`에 추가
 
 ### 로컬 개발 서버 실행
 
@@ -204,9 +215,11 @@ npm start
 receipt_flow/
 ├── app/
 │   ├── api/
-│   │   └── ocr/         # OCR API 프록시
-│   │       └── route.ts # Naver OCR API 호출
-│   ├── analytics/        # 통계 페이지
+│   │   ├── analyze/      # AI 분석 API
+│   │   │   └── route.ts  # Claude AI 지출 분석
+│   │   └── ocr/          # OCR API 프록시
+│   │       └── route.ts  # Naver OCR API 호출
+│   ├── analytics/        # 통계 페이지 (AI 분석 기능 포함)
 │   ├── calendar/         # 캘린더 뷰
 │   ├── categories/       # 카테고리 관리
 │   ├── components/       # 공통 컴포넌트
@@ -229,6 +242,7 @@ receipt_flow/
 ## 🔮 향후 계획
 
 - [x] ~~영수증 이미지 업로드 및 OCR 기능~~ ✅ **완료** (Naver CLOVA OCR)
+- [x] ~~AI 지출 분석 및 절약 제안 기능~~ ✅ **완료** (Claude 3 Haiku)
 - [ ] OCR 정확도 개선 (AI 학습 데이터 추가)
 - [ ] 예산 설정 및 알림 기능
 - [ ] 지출 트렌드 차트 (월별, 카테고리별)
