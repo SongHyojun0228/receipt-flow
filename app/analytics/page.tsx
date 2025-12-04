@@ -14,6 +14,12 @@ interface CategoryStat {
   percentage: number
 }
 
+interface Budget {
+  id: string
+  category_id: string | null
+  amount: number
+}
+
 type ViewMode = "weekly" | "monthly"
 
 export default function AnalyticsPage() {
@@ -25,6 +31,7 @@ export default function AnalyticsPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [analysis, setAnalysis] = useState<string>("")
+  const [budgets, setBudgets] = useState<Budget[]>([])
   const router = useRouter()
 
   useEffect(() => {
@@ -35,6 +42,7 @@ export default function AnalyticsPage() {
   useEffect(() => {
     if (userId) {
       loadStatistics()
+      loadBudgets()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDate, viewMode, userId])
@@ -138,6 +146,59 @@ export default function AnalyticsPage() {
       console.error("Error loading statistics:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const getCurrentPeriodStart = (): string => {
+    const now = currentDate
+    if (viewMode === "weekly") {
+      const day = now.getDay()
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1)
+      const monday = new Date(now)
+      monday.setDate(diff)
+      return monday.toISOString().split("T")[0]
+    } else {
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`
+    }
+  }
+
+  const loadBudgets = async () => {
+    if (!userId) return
+
+    try {
+      const startDate = getCurrentPeriodStart()
+
+      const { data, error } = await supabase
+        .from("budgets")
+        .select("id, category_id, amount")
+        .eq("user_id", userId)
+        .eq("period_type", viewMode)
+        .eq("start_date", startDate)
+
+      if (error) throw error
+      setBudgets(data || [])
+    } catch (error) {
+      console.error("Error loading budgets:", error)
+    }
+  }
+
+  const getBudgetProgress = (categoryId: string | null) => {
+    const budget = budgets.find((b) => b.category_id === categoryId)
+    if (!budget) return null
+
+    const spent = categoryId
+      ? stats.find((s) => s.categoryId === categoryId)?.totalAmount || 0
+      : totalAmount
+
+    const percentage = budget.amount > 0 ? (spent / budget.amount) * 100 : 0
+    const remaining = budget.amount - spent
+
+    return {
+      budget: budget.amount,
+      spent,
+      percentage,
+      remaining,
+      isOverBudget: spent > budget.amount,
     }
   }
 
@@ -303,6 +364,66 @@ export default function AnalyticsPage() {
             </p>
           </div>
         </div>
+
+        {/* 예산 진행률 */}
+        {!loading && getBudgetProgress(null) && (
+          <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+                예산 진행률
+              </h3>
+              <a
+                href="/budgets"
+                className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+              >
+                예산 설정 →
+              </a>
+            </div>
+            {(() => {
+              const progress = getBudgetProgress(null)!
+              return (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-zinc-600 dark:text-zinc-400">전체 예산</span>
+                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                      {progress.spent.toLocaleString()} / {progress.budget.toLocaleString()}원
+                    </span>
+                  </div>
+                  <div className="h-4 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                    <div
+                      className={`h-full transition-all ${
+                        progress.isOverBudget
+                          ? "bg-red-500"
+                          : progress.percentage > 80
+                            ? "bg-yellow-500"
+                            : "bg-green-500"
+                      }`}
+                      style={{ width: `${Math.min(progress.percentage, 100)}%` }}
+                    />
+                  </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span
+                      className={`text-sm font-medium ${
+                        progress.isOverBudget
+                          ? "text-red-600 dark:text-red-400"
+                          : progress.percentage > 80
+                            ? "text-yellow-600 dark:text-yellow-400"
+                            : "text-green-600 dark:text-green-400"
+                      }`}
+                    >
+                      {progress.isOverBudget
+                        ? `예산 초과 ${Math.abs(progress.remaining).toLocaleString()}원`
+                        : `${progress.remaining.toLocaleString()}원 남음`}
+                    </span>
+                    <span className="text-sm text-zinc-500 dark:text-zinc-500">
+                      {progress.percentage.toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+        )}
 
         {/* 카테고리별 통계 */}
         <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
