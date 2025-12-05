@@ -35,6 +35,7 @@ export default function BudgetsPage() {
 
   useEffect(() => {
     checkUser()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -107,6 +108,7 @@ export default function BudgetsPage() {
 
       if (error) throw error
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const formattedBudgets: Budget[] = (data || []).map((budget: any) => ({
         id: budget.id,
         period_type: budget.period_type,
