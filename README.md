@@ -21,6 +21,8 @@ Receipt Flow는 일상 생활의 지출을 효율적으로 관리할 수 있는 
 - 📅 **캘린더 뷰**: 날짜별 지출 내역을 캘린더 형태로 시각화
 - 📈 **통계 분석**: 주간/월간 카테고리별 지출 통계 및 비율 분석
 - 🤖 **AI 지출 분석**: Claude AI를 활용한 지능형 소비 패턴 분석 및 절약 제안
+- 💰 **예산 관리**: 주간/월간 예산 설정 및 실시간 진행률 추적
+- 📊 **지출 트렌드**: 3/6/12개월 지출 변화 추이 및 카테고리별 비교 차트
 - 💳 **거래 내역**: 모든 거래를 시간순으로 확인하고 상세 정보 조회
 
 ## 🤖 Claude Code와 함께 개발
@@ -94,6 +96,7 @@ https://www.notion.so/2b913ddc688b806ebb4ded3f46f1413a
 - **React 19.2.0**: UI 컴포넌트 라이브러리
 - **TypeScript 5**: 타입 안전성을 위한 정적 타입 언어
 - **Tailwind CSS 4**: 유틸리티 기반 CSS 프레임워크
+- **Recharts**: 반응형 차트 라이브러리 (LineChart, BarChart)
 
 ### Backend & Database
 - **Supabase**: PostgreSQL 데이터베이스 및 인증 서비스
@@ -220,6 +223,7 @@ receipt_flow/
 │   │   └── ocr/          # OCR API 프록시
 │   │       └── route.ts  # Naver OCR API 호출
 │   ├── analytics/        # 통계 페이지 (AI 분석 기능 포함)
+│   ├── budgets/          # 예산 관리 페이지
 │   ├── calendar/         # 캘린더 뷰
 │   ├── categories/       # 카테고리 관리
 │   ├── components/       # 공통 컴포넌트
@@ -229,11 +233,14 @@ receipt_flow/
 │   ├── receipt-upload/  # 영수증 OCR 업로드
 │   │   └── page.tsx
 │   ├── transactions/    # 거래 내역
+│   ├── trends/          # 지출 트렌드 차트
 │   ├── layout.tsx       # 루트 레이아웃
 │   └── page.tsx         # 홈 페이지
 ├── lib/
 │   ├── auth.ts          # 인증 헬퍼 함수
 │   └── supabase.ts      # Supabase 클라이언트
+├── supabase/
+│   └── budgets.sql      # 예산 테이블 스키마
 ├── types/
 │   └── database.ts      # 타입 정의
 └── public/              # 정적 파일
@@ -243,9 +250,10 @@ receipt_flow/
 
 - [x] ~~영수증 이미지 업로드 및 OCR 기능~~ ✅ **완료** (Naver CLOVA OCR)
 - [x] ~~AI 지출 분석 및 절약 제안 기능~~ ✅ **완료** (Claude 3 Haiku)
+- [x] ~~예산 설정 및 알림 기능~~ ✅ **완료** (주간/월간 예산 관리 및 진행률 추적)
+- [x] ~~지출 트렌드 차트 (월별, 카테고리별)~~ ✅ **완료** (Recharts 기반 시각화)
 - [ ] OCR 정확도 개선 (AI 학습 데이터 추가)
-- [ ] 예산 설정 및 알림 기능
-- [ ] 지출 트렌드 차트 (월별, 카테고리별)
+- [ ] 예산 초과 시 푸시 알림 기능
 - [ ] CSV/Excel 내보내기
 - [ ] 다크 모드 개선
 - [ ] 모바일 앱 (React Native)

@@ -96,6 +96,12 @@ export default function Navigation() {
                 >
                   예산
                 </Link>
+                <Link
+                  href="/trends"
+                  className="text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+                >
+                  트렌드
+                </Link>
               </>
             )}
 
